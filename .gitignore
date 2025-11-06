@@ -6,3 +6,6 @@ composer.lock
 
 # Ignorar cualquier carpeta vendor en cualquier ubicación
 **/vendor/
+
+# Ignorar imagenes
+**/imagenes/

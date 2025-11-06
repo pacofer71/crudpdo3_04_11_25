@@ -50,6 +50,16 @@ class Producto extends Conexion
         $q = "delete from productos";
         self::executeQuery($q);
     }
+    public static function delete(int $id){
+        $q="delete from productos where id=:i";
+        self::executeQuery($q, [':i'=>$id]);
+    }
+
+    public static function existeNombre(string $nombre): bool{
+        $q="select id from productos where nombre=:n";
+        $stmt=self::executeQuery($q, [':n'=>$nombre], true);
+        return count($stmt->fetchAll(PDO::FETCH_OBJ));
+    }
 
     public static function crearRegistros(int $cantidad)
     {
