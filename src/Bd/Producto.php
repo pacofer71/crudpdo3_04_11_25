@@ -1,10 +1,12 @@
 <?php
+
 namespace App\Bd;
 
 use \PDO;
 use \PDOStatement;
 
-class Producto extends Conexion{
+class Producto extends Conexion
+{
     private int $id;
     private string $nombre;
     private string $descripcion;
@@ -12,29 +14,65 @@ class Producto extends Conexion{
     private string $disponible;
     private string $imagen;
 
-    private static function executeQuery(string $q, array $parametros=[], bool $devolverAlgo=false): ?PDOStatement{
-        $stmt=self::getConexion()->prepare($q);
-        try{
-            count($parametros) ? $stmt->execute($parametros) : $stmt->execute();
-        }catch(\PDOException $ex){
-            die("Eror en el query: ".$ex->getMessage());
+    private static function executeQuery(string $q, array $parametros = [], bool $devolverAlgo = false): ?PDOStatement
+    {
+        $stmt = self::getConexion()->prepare($q);
+        try {
+            $stmt->execute($parametros);
+        } catch (\PDOException $ex) {
+            die("Eror en el query: " . $ex->getMessage());
         }
         return $devolverAlgo ?  $stmt : null;
     }
 
-    public function create(): void{
-        $q="insert into productos(nombre, descripcion, precio, disponible, imagen) values(:n, :de, :p, :di, :im)";
+    public function create(): void
+    {
+        $q = "insert into productos(nombre, descripcion, precio, disponible, imagen) values(:n, :de, :p, :di, :im)";
         self::executeQuery($q, [
-            ':n'=>$this->nombre,
-            ':de'=>$this->descripcion,
-            ':p'=>$this->precio,
-            ':di'=>$this->disponible,
-            ':im'=>$this->imagen
+            ':n' => $this->nombre,
+            ':de' => $this->descripcion,
+            ':p' => $this->precio,
+            ':di' => $this->disponible,
+            ':im' => $this->imagen
         ]);
-    } 
+    }
+    public static function read(?int $id = null): array
+    {
+        $q = ($id == null) ? "select * from productos order by id desc" :
+            "select * from productos where id=:i";
+        $parametros=($id==null) ? [] :[':i'=>$id];
+        $stmt=self::executeQuery($q, $parametros, true);
+        return $stmt->fetchAll(PDO::FETCH_OBJ);
+    }
 
-    public static function crearRegistros(int $cantidad){
-        
+    public static function borrarTodo()
+    {
+        $q = "delete from productos";
+        self::executeQuery($q);
+    }
+
+    public static function crearRegistros(int $cantidad)
+    {
+        $faker = \Faker\Factory::create('es_ES');
+        $faker->addProvider(new \Mmo\Faker\PicsumProvider($faker));
+        //$faker->addProvider(new \Mmo\Faker\FakeimgProvider($faker));
+
+        for ($i = 0; $i < $cantidad; $i++) {
+            $nombre = $faker->unique()->sentence(3, true);
+            $descripcion = $faker->text();
+            $precio = $faker->randomFloat(2, 10, 9999.99);
+            $disponible = $faker->randomElement(['SI', 'NO']);
+            //$imagen = "/imagenes/" . $faker->picsum(__DIR__ . "/../../public/imagenes/", 600, 480, false);
+            //$imagen="/imagenes/". $faker->fakeImg(__DIR__."/../../public/imagenes/", 400, 400, false);
+            $imagen = "/imagenes/default.png";
+            (new Producto)
+                ->setNombre($nombre)
+                ->setDescripcion($descripcion)
+                ->setPrecio($precio)
+                ->setDisponible($disponible)
+                ->setImagen($imagen)
+                ->create();
+        }
     }
 
     /**
@@ -67,7 +105,7 @@ class Producto extends Conexion{
         return $this;
     }
 
-    
+
 
     /**
      * Set the value of disponible

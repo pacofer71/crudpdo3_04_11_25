@@ -30,7 +30,7 @@ class Conexion{
         try{
             self::$conexion=new PDO($dsn, $usuario, $pass, $opciones);
         }catch(PDOException $ex){
-            die("Error en la conexión: "-$ex->getMessage());
+            die("Error en la conexión: ".$ex->getMessage());
         }
 
 
