@@ -1,10 +1,22 @@
 <?php
-
 use App\Bd\Producto;
 use App\Utils\Validacion;
-
 session_start();
 require __DIR__ . "/../vendor/autoload.php";
+$id=filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+if(!$id){
+    header("Location:index.php");
+    exit;
+}
+//necesitaremos el producto para rellenar los campos
+$producto=Producto::read($id)[0] ?? null;
+if(!$producto){
+    header("Location:index.php");
+    exit; 
+}
+$ckDis=($producto->disponible=='SI') ? "checked" :"";
+$ckNoDis=($producto->disponible=='NO') ? "checked" :"";
+
 if (isset($_POST['nombre'])) {
     //1.- Recogemos y Limpiamos
     $nombre = Validacion::sanearCadenas($_POST['nombre']);
@@ -18,7 +30,7 @@ if (isset($_POST['nombre'])) {
     if (!Validacion::longitudCampoValida('nombre', $nombre, 3, 50)) {
         $errores = true;
     }else{
-        if(!Validacion::esNombreUnico($nombre)){
+        if(!Validacion::esNombreUnico($nombre, $id)){
             $errores=true;
         }
     }
@@ -33,7 +45,7 @@ if (isset($_POST['nombre'])) {
     }
 
     // Procesamos el campo imagen
-    $imagen = "/imagenes/noimage.jpg";
+    $imagen = $producto->imagen;
     
     if (is_uploaded_file($_FILES['imagen']['tmp_name'])) {
         $file = $_FILES['imagen'];
@@ -49,24 +61,32 @@ if (isset($_POST['nombre'])) {
             if (!move_uploaded_file($file['tmp_name'], $ruta)) {
                 $errores = true;
                 $_SESSION['error_imagen'] = "*** Error, no se pudo guardar la imagen";
+            }else{
+                //Si estoy aqui todo ha ido bien se subió la imagen
+                //borrare la vieja o no en funcion de que sea o no 'noimage.jpg'
+                $imagenVieja=$producto->imagen;
+                if(basename($imagenVieja)!='noimage.jpg'){
+                    //borrare la imagen vieja
+                    @unlink(".".$imagenVieja);
+                }
             }
         } else {
             $errores = true;
         }
     }
     if ($errores) {
-        header("Location:{$_SERVER['PHP_SELF']}");
+        header("Location:{$_SERVER['PHP_SELF']}?id=$id");
         die();
     }
-    // No ha habido errores, vamos a guarar el producto
+    // No ha habido errores, vamos a guardar el producto
     (new Producto)
         ->setNombre($nombre)
         ->setDescripcion($descripcion)
         ->setPrecio($precio)
         ->setImagen($imagen)
         ->setDisponible($disponible)
-        ->create();
-    $_SESSION['mensaje']="Registro Guardado";
+        ->update($id);
+    $_SESSION['mensaje']="Registro Editado";
     header("Location:index.php");
     exit;
 }
@@ -87,9 +107,9 @@ if (isset($_POST['nombre'])) {
 </head>
 
 <body class="bg-blue-200 p-8">
-    <h3 class="text-center text-xl font-bold mb-2">Crear Producto</h3>
+    <h3 class="text-center text-xl font-bold mb-2">Actualizar Producto</h3>
     <div class="w-1/3 mx-auto p-6 bg-white rounded-lg shadow-md mt-8">
-        <form action="<?= $_SERVER['PHP_SELF'] ?>" method='POST' enctype="multipart/form-data">
+        <form action="<?= $_SERVER['PHP_SELF']."?id=$id" ?>" method='POST' enctype="multipart/form-data">
             <!-- Campo Nombre -->
             <div class="mb-4">
                 <label for="nombre" class="block text-sm font-medium text-gray-700 mb-2">
@@ -99,6 +119,7 @@ if (isset($_POST['nombre'])) {
                     type="text"
                     id="nombre"
                     name="nombre"
+                    value="<?=$producto->nombre ?>"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Ingresa el nombre del producto">
                     <?php Validacion::pintarError('error_nombre') ?>
@@ -114,7 +135,7 @@ if (isset($_POST['nombre'])) {
                     name="descripcion"
                     rows="4"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Describe el producto..."></textarea>
+                    placeholder="Describe el producto..."><?=$producto->descripcion ?></textarea>
                     <?php Validacion::pintarError('error_descripcion') ?>
             </div>
 
@@ -127,6 +148,7 @@ if (isset($_POST['nombre'])) {
                     type="number"
                     id="precio"
                     name="precio"
+                    value="<?=$producto->precio ?>"
                     step="0.01"
                     min="0"
                     max="9999.99"
@@ -146,6 +168,7 @@ if (isset($_POST['nombre'])) {
                             type="radio"
                             name="disponible"
                             value="SI"
+                            <?= $ckDis ?>
                             class="text-blue-600 focus:ring-blue-500">
                         <span class="ml-2 text-gray-700">Sí</span>
                     </label>
@@ -154,6 +177,7 @@ if (isset($_POST['nombre'])) {
                             type="radio"
                             name="disponible"
                             value="NO"
+                            <?= $ckNoDis ?>
                             class="text-blue-600 focus:ring-blue-500">
                         <span class="ml-2 text-gray-700">No</span>
                     </label>
@@ -166,7 +190,7 @@ if (isset($_POST['nombre'])) {
                 <label for="cimagen" class="absolute bottom-2 right-2 p-1 rounded-lg bg-gray-700 hover:bg-gray-900 text-white font-bold">
                     <i class="fa-solid fa-upload mr-1"></i>SUBIR
                 </label>
-                <img src="" id="preview" class="w-full h-full bg-center bg-cover bg-no-repeat" />
+                <img src="<?= ".".$producto->imagen ?>" id="preview" class="w-full h-full bg-center bg-cover bg-no-repeat" />
             </div>
             <?php Validacion::pintarError('error_imagen') ?>
             <!-- Botones -->
@@ -179,7 +203,7 @@ if (isset($_POST['nombre'])) {
                 <button
                     type="submit"
                     class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200">
-                    <i class="fas fa-save mr-2"></i>Guardar
+                    <i class="fas fa-edit mr-2"></i>EDITAR
                 </button>
             </div>
         </form>

@@ -36,12 +36,24 @@ class Producto extends Conexion
             ':im' => $this->imagen
         ]);
     }
+    public function update(int $id)
+    {
+        $q = "update productos set nombre=:n, descripcion=:de, precio=:p, disponible=:di, imagen=:im where id=:i";
+        self::executeQuery($q, [
+            ':n' => $this->nombre,
+            ':de' => $this->descripcion,
+            ':p' => $this->precio,
+            ':di' => $this->disponible,
+            ':im' => $this->imagen,
+            ':i' => $id
+        ]);
+    }
     public static function read(?int $id = null): array
     {
         $q = ($id == null) ? "select * from productos order by id desc" :
             "select * from productos where id=:i";
-        $parametros=($id==null) ? [] :[':i'=>$id];
-        $stmt=self::executeQuery($q, $parametros, true);
+        $parametros = ($id == null) ? [] : [':i' => $id];
+        $stmt = self::executeQuery($q, $parametros, true);
         return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
 
@@ -50,14 +62,18 @@ class Producto extends Conexion
         $q = "delete from productos";
         self::executeQuery($q);
     }
-    public static function delete(int $id){
-        $q="delete from productos where id=:i";
-        self::executeQuery($q, [':i'=>$id]);
+    public static function delete(int $id)
+    {
+        $q = "delete from productos where id=:i";
+        self::executeQuery($q, [':i' => $id]);
     }
 
-    public static function existeNombre(string $nombre): bool{
-        $q="select id from productos where nombre=:n";
-        $stmt=self::executeQuery($q, [':n'=>$nombre], true);
+    public static function existeNombre(string $nombre, ?int $id = null): bool
+    {
+        $q = ($id == null) ? "select id from productos where nombre=:n" :
+            "select id from productos where nombre=:n AND id <> :i";
+        $parametros = ($id == null) ? ['n' => $nombre] : ['n' => $nombre, ':i' => $id];
+        $stmt = self::executeQuery($q, $parametros, true);
         return count($stmt->fetchAll(PDO::FETCH_OBJ));
     }
 

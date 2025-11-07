@@ -36,8 +36,8 @@ abstract class Validacion
         }
         return true;
     }
-    public static function esNombreUnico(string $nombre): bool{
-        if(Producto::existeNombre($nombre)){
+    public static function esNombreUnico(string $nombre, ?int $id=null): bool{
+        if(Producto::existeNombre($nombre, $id)){
             $_SESSION['error_nombre']="*** Error, ya existe un producto con ese nombre.";
             return false;
         }

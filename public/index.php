@@ -75,6 +75,9 @@ $productos = Producto::read();
                     <td class="px-6 py-4">
                         <form method="POST" action="borrar.php">
                             <input type="hidden" name="id" value="<?=$item->id ?>" />
+                            <a href="update.php?id=<?=$item->id ?>">
+                                <i class="fas fa-edit text-green-500 hover:tegext-lg mt-2"></i>
+                            </a>
                             <button type="submit">
                                 <i class="fas fa-trash text-red-500 hover:text-lg"></i>
                             </button>
@@ -85,7 +88,21 @@ $productos = Producto::read();
             </tbody>
         </table>
     </div>
-
+<?php
+    if(isset($_SESSION['mensaje'])){
+    echo <<< TXT
+    <script>
+        Swal.fire({
+            icon: "success",
+            title: "{$_SESSION['mensaje']}",
+            showConfirmButton: false,
+            timer: 1500
+        });
+    </script>
+    TXT;
+    unset($_SESSION['mensaje']);
+    }
+?>
 </body>
 
 </html
